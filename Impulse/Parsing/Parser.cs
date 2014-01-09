@@ -8,11 +8,11 @@ namespace Impulse
 {
     class Parser
     {
-        //public Lexer lex;
+        public Lexer lex;
 
         public Parser()
         {
-            //lex = new Lexer();
+            lex = new Lexer();
         }
 
         public void ParseFile(string file)
@@ -26,14 +26,14 @@ namespace Impulse
                     currentLine = currentLine.Trim(); // Remove all white characters.
 
                     Console.WriteLine("-> {0}", currentLine);
-
+                    lex.IdentifyLine(currentLine);
                 }
             }
         }
 
         private void ParseLine(string line)
         {
-
+            
         }
     }
 }
