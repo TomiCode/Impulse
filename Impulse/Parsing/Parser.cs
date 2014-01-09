@@ -26,7 +26,7 @@ namespace Impulse
                     currentLine = currentLine.Trim(); // Remove all white characters.
 
                     Console.WriteLine("-> {0}", currentLine);
-                    lex.IdentifyLine(currentLine);
+                    Console.WriteLine(lex.IdentifyLine(currentLine));
                 }
             }
         }
