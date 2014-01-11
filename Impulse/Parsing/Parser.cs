@@ -8,26 +8,26 @@ namespace Impulse
 {
     class Parser
     {
-        public Lexer lex;
-
+        Lexer lex;
         public Parser()
         {
             lex = new Lexer();
         }
 
+
         public void ParseFile(string file)
         {
-            string currentLine;
+            Token[] tokens;
             using (StreamReader sReader = new StreamReader(file))
             {
-                while ((currentLine = sReader.ReadLine()) != null)
-                {
-                    if (currentLine.Length == 0) continue;
-                    currentLine = currentLine.Trim(); // Remove all white characters.
+                tokens = lex.LexTextStream(sReader);
+            }
+            if (tokens == null) return;
 
-                    Console.WriteLine("-> {0}", currentLine);
-                    Console.WriteLine(lex.IdentifyLine(currentLine));
-                }
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                if(tokens[i].token != null)
+                    Console.WriteLine("| Token {0}: {1} type: {2} |", i, tokens[i].token, tokens[i].type);
             }
         }
 
