@@ -2,60 +2,117 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Impulse
 {
+    enum TokenState
+    {
+        Token_Unknown = 0,
+        Token_String = 1,
+        Token_Chars = 2,
+        Token_Keyword = 3,
+        Token_Variable = 4,
+        Token_Operator = 5
+    }
+
+    struct Token
+    {
+        public TokenState type;
+        public string token;
+    }
+
     class Lexer
     {
-        public LexerReturns IdentifyLine(string line)
+        TokenState state;
+
+        public Token[] LexTextStream(StreamReader stream)
         {
-            string[] tags;
-            if (line.Contains("("))
+            char[] nextChar = new char[1];
+            char[] buffer = new char[128];
+
+            Token[] tokens = new Token[256]; // Only for now.
+            int lexPosition = 0;
+
+            while (stream.Read(nextChar, 0, 1) == 1)
             {
-                if (!line.Contains(")")) return LexerReturns.SYNTAX_ERROR;
-                else line = line.Replace(")","");
-
-                tags = line.Split('(');
-                if (tags.Length > 2) return LexerReturns.BAD_ARGUMENTS;
-
-                //if(tags[1])
-
-                foreach (var i in tags){
-                    Console.WriteLine("i : {0}", i);
-                }
-            }
-            else if (line.Contains("\""))
-            {
-                tags = line.Split('"');
-                if (tags.Length < 3) return LexerReturns.BAD_ARGUMENTS;
-                foreach (var i in tags)
+                if (state == TokenState.Token_String || state == TokenState.Token_Chars)
                 {
-                    if (i.Length < 1) continue;
-                    string a = i.Trim();
-                    Console.WriteLine("i : {0}, Len: {1}", a, a.Length);
+                    if (nextChar[0] == '"' && state == TokenState.Token_String 
+                        || nextChar[0] == '\'' && state == TokenState.Token_Chars)
+                    {
+                        int tokenPos = getTokenTableIndex(tokens);
+                        if (tokenPos == -1) return null; // Exception! But not now xD
+
+                        tokens[tokenPos] = new Token();
+                        tokens[tokenPos].token = bufferToStringToken(buffer, lexPosition);
+                        tokens[tokenPos].type = state; // The lexer know that xD
+                        
+                        lexPosition = 0;
+                        state = TokenState.Token_Unknown; // IDK What the next char is like.
+                        continue;
+                    }
+                    else
+                    {
+                        buffer[lexPosition] = nextChar[0];
+                        lexPosition++;
+                    }
                 }
-            }
-            else
-            {
-                tags = line.Split(' ');
-
-                if (tags.Length == 0) return LexerReturns.SYNTAX_ERROR;
-                else if (tags.Length == 1 && tags[0] == "__init") return LexerReturns.Init;
-
-                foreach (var i in tags)
+                else if (state == TokenState.Token_Variable || state == TokenState.Token_Keyword)
                 {
-                    if (i.Length < 1) continue;
-                    string a = i.Trim();
-                    Console.WriteLine("i : {0}, Len: {1}", a, a.Length);
+
+                }
+                else if (nextChar[0] == '"' && state == TokenState.Token_Unknown)
+                {
+                    state = TokenState.Token_String;
+                    continue;
+                }
+                else if (nextChar[0] == '\'')
+                {
+                    state = TokenState.Token_Chars;
+                    continue;
+                }
+                else if (nextChar[0] == '$')
+                {
+                    state = TokenState.Token_Variable;
+                    continue;
+                }
+                else if (nextChar[0] >= 'a' 
+                        || nextChar[0] <= 'z'
+                        || nextChar[0] >= 'A'
+                        || nextChar[0] <= 'Z' )
+                {
+                    state = TokenState.Token_Keyword;
+                    continue;
+                }
+                else if (nextChar[0] == ' ')
+                {
+
                 }
             }
 
-            return LexerReturns.OK;
+            return tokens;
         }
 
-        private void CallFunction(string func, object args)
+        private int getTokenTableIndex(Token[] table)
         {
-            // Homework :P
+            for (int i = 0; i < table.Length; i++)
+            {
+                if(table[i].token == "" || table[i].token == null) return i;
+            }
+            return -1;
+        }
+
+        private string bufferToStringToken(char[] table, int count)
+        {
+            string buffer = "";
+            for (int i = 0; i < count; i++)
+            {
+                buffer += table[i];
+            }
+
+            return buffer;
         }
     }
 }
