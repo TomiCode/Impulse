@@ -37,13 +37,20 @@ namespace Impulse
 
             Token[] tokens = new Token[256]; // Only for now.
             int lexPosition = 0;
+            int currentLine = 1;
 
             while (!stream.EndOfStream)
             {
                 if ((nextChar = (char)stream.Read()) == '\r') continue;
+                if (nextChar == '\n') currentLine++; // Line tracking.
+
                 if (state == TokenState.Token_String || state == TokenState.Token_Chars)
                 {
-                    if (nextChar == '\n') return null; // Exception! Someone does not closed the string!
+                    if (nextChar == '\n')
+                    {
+                        Console.WriteLine("Syntax Error: Line {0} ( {1} )", currentLine, state);
+                        return null;
+                    }
                     if (nextChar == '"' && state == TokenState.Token_String
                         || nextChar == '\'' && state == TokenState.Token_Chars)
                     {
@@ -74,7 +81,8 @@ namespace Impulse
                         || nextChar == '<'
                         || nextChar == '>'
                         || nextChar == '*'
-                        || nextChar == '/')
+                        || nextChar == '/'
+                        || nextChar == ':')
                     {
                         int tokenPos = getTokenTableIndex(tokens);
                         if (tokenPos == -1) return null; // Buffer overflow xD
@@ -88,7 +96,8 @@ namespace Impulse
                             || nextChar == '*'
                             || nextChar == '/'
                             || nextChar == '>'
-                            || nextChar == '<')
+                            || nextChar == '<'
+                            || nextChar == ':')
                         {
                             state = TokenState.Token_Operator;
                             buffer[0] = nextChar;
@@ -130,7 +139,13 @@ namespace Impulse
                     }
                     else if (nextChar == '.')
                     {
-                        if (state == TokenState.Token_Float) return null; // Float like this 1.00.2 ? WTF??
+                        if (state == TokenState.Token_Float)
+                        {
+                            Console.WriteLine("Syntax Error: Line {0} ( {1} )", currentLine, state);
+                            return null;
+                        }
+                        buffer[lexPosition] = nextChar;
+                        lexPosition++;
                         state = TokenState.Token_Float;
                         continue;
 
@@ -148,7 +163,9 @@ namespace Impulse
                         || (nextChar >= '0' && nextChar <= '9')
                         || nextChar == '"'
                         || nextChar == '\''
-                        || nextChar == ' ')
+                        || nextChar == ' '
+                        || nextChar >= 'a' && nextChar <= 'z'
+                        || nextChar >= 'A' && nextChar <= 'Z')
                     {
                         int tokenPos = getTokenTableIndex(tokens);
                         if (tokenPos == -1) return null;
@@ -161,6 +178,15 @@ namespace Impulse
                             || (nextChar >= '0' && nextChar <= '9'))
                         {
                             state = TokenState.Token_Decimal;
+                            buffer[0] = nextChar;
+                            lexPosition = 1;
+
+                            continue;
+                        }
+                        else if (nextChar >= 'a' && nextChar <= 'z'
+                            || nextChar >= 'A' && nextChar <= 'Z')
+                        {
+                            state = TokenState.Token_Keyword; // Maybe? Or not xD
                             buffer[0] = nextChar;
                             lexPosition = 1;
 
@@ -179,9 +205,8 @@ namespace Impulse
                         lexPosition = 0;
                         continue;
                     }
-                    
                 }
-                else if (nextChar == '\n' && state == TokenState.Token_Unknown) continue; // Fucking new line!
+                else if (nextChar == '\n' && state == TokenState.Token_Unknown) continue; // Fuck the new line char!
                 else if (nextChar == '"' && state == TokenState.Token_Unknown)
                 {
                     state = TokenState.Token_String;
@@ -208,6 +233,8 @@ namespace Impulse
                 else if (nextChar == '-' // This is for a negative number? Hmm...
                         || (nextChar >= '0' && nextChar <= '9'))
                 {
+                    buffer[0] = nextChar;
+                    lexPosition++;
                     state = TokenState.Token_Decimal;
                     continue;
                 }
@@ -226,7 +253,22 @@ namespace Impulse
             }
             if (state != TokenState.Token_Unknown)
             {
-                Console.WriteLine("Error! {0} was not property closed!", state);
+                if (state == TokenState.Token_Keyword
+                    || state == TokenState.Token_Decimal
+                    || state == TokenState.Token_Float
+                    || state == TokenState.Token_Operator)
+                {
+                    int tokenPos = getTokenTableIndex(tokens);
+                    if (tokenPos == -1) return null;
+
+                    tokens[tokenPos] = new Token();
+                    tokens[tokenPos].token = bufferToStringToken(buffer, lexPosition);
+                    tokens[tokenPos].type = state;
+                }
+                else
+                {
+                    Console.WriteLine("Syntax Error: Line {0} ( {1} was not property closed. )", currentLine, state);
+                }
             }
 
             return tokens;
