@@ -17,7 +17,10 @@ namespace Impulse
         Token_Operator = 5,
         Token_Brackets = 6,
         Token_Decimal = 7,
-        Token_Float = 8
+        Token_Float = 8,
+        Token_Comma = 9,
+        Token_Brackets_Close = 10,
+        Token_Reference = 11
     }
 
     struct Token
@@ -42,7 +45,6 @@ namespace Impulse
             while (!stream.EndOfStream)
             {
                 if ((nextChar = (char)stream.Read()) == '\r') continue;
-                if (nextChar == '\n') currentLine++; // Line tracking.
 
                 if (state == TokenState.Token_String || state == TokenState.Token_Chars)
                 {
@@ -69,12 +71,14 @@ namespace Impulse
                     {
                         buffer[lexPosition] = nextChar;
                         lexPosition++;
+                        continue;
                     }
                 }
                 else if (state == TokenState.Token_Variable || state == TokenState.Token_Keyword)
                 {
                     if (nextChar == ' '
                         || nextChar == '('
+                        || nextChar == ')'
                         || nextChar == '\n'
                         || nextChar == '='
                         || nextChar == '+'
@@ -82,7 +86,8 @@ namespace Impulse
                         || nextChar == '>'
                         || nextChar == '*'
                         || nextChar == '/'
-                        || nextChar == ':')
+                        || nextChar == ':'
+                        || nextChar == ',')
                     {
                         int tokenPos = getTokenTableIndex(tokens);
                         if (tokenPos == -1) return null; // Buffer overflow xD
@@ -96,22 +101,43 @@ namespace Impulse
                             || nextChar == '*'
                             || nextChar == '/'
                             || nextChar == '>'
-                            || nextChar == '<'
-                            || nextChar == ':')
+                            || nextChar == '<')
                         {
                             state = TokenState.Token_Operator;
                             buffer[0] = nextChar;
                             lexPosition = 1;
                             continue;
                         }
-                        else if (nextChar == '(')
+                        else if (nextChar == ':' && state == TokenState.Token_Keyword)
                         {
-                            state = TokenState.Token_Brackets;
+                            state = TokenState.Token_Reference;
+
+                            lexPosition = 1;
+                            buffer[0] = nextChar;
+                            continue;
+                        }
+                        else if (nextChar == '(' || nextChar == ')')
+                        {
+                            if (nextChar == '(') state = TokenState.Token_Brackets;
+                            else state = TokenState.Token_Brackets_Close;
+
+                            lexPosition = 1;
+                            buffer[0] = nextChar;
+                            continue;
+                        }
+                        else if (nextChar == ',')
+                        {
+                            state = TokenState.Token_Comma;
+                            buffer[0] = nextChar;
+                            lexPosition = 1;
+
+                            continue;
                         }
                         else
                         {
                             state = TokenState.Token_Unknown;
                         }
+
                         lexPosition = 0;
                         continue;
                     }
@@ -124,7 +150,10 @@ namespace Impulse
                 }
                 else if (state == TokenState.Token_Decimal || state == TokenState.Token_Float)
                 {
-                    if (nextChar == ' ')
+                    if (nextChar == ' '
+                        || nextChar == '\n'
+                        || nextChar == ','
+                        || nextChar == ')')
                     {
                         int tokenPos = getTokenTableIndex(tokens);
                         if (tokenPos == -1) return null;
@@ -133,7 +162,17 @@ namespace Impulse
                         tokens[tokenPos].token = bufferToStringToken(buffer, lexPosition);
                         tokens[tokenPos].type = state;
 
-                        state = TokenState.Token_Unknown;
+                        if (nextChar == ','
+                            || nextChar == ')')
+                        {
+                            if (nextChar == ',') state = TokenState.Token_Comma;
+                            else if (nextChar == ')') state = TokenState.Token_Brackets_Close;
+                            buffer[0] = nextChar;
+                            lexPosition++;
+
+                            continue;
+                        }
+                        else state = TokenState.Token_Unknown;
                         lexPosition = 0;
                         continue;
                     }
@@ -159,7 +198,7 @@ namespace Impulse
                 }
                 else if (state == TokenState.Token_Operator)
                 {
-                    if(nextChar == '-'
+                    if (nextChar == '-'
                         || (nextChar >= '0' && nextChar <= '9')
                         || nextChar == '"'
                         || nextChar == '\''
@@ -206,6 +245,185 @@ namespace Impulse
                         continue;
                     }
                 }
+                else if (state == TokenState.Token_Comma)
+                {
+                    if (nextChar == ' '
+                        || nextChar >= 'a' && nextChar <= 'z'
+                        || nextChar >= 'A' && nextChar <= 'Z'
+                        || nextChar == '!'
+                        || nextChar >= '0' && nextChar <= '9'
+                        || nextChar == '-'
+                        || nextChar == '\''
+                        || nextChar == '"')
+                    {
+                        int tokenPos = getTokenTableIndex(tokens);
+                        if (tokenPos == -1) return null;
+
+                        tokens[tokenPos] = new Token();
+                        tokens[tokenPos].token = bufferToStringToken(buffer, lexPosition);
+                        tokens[tokenPos].type = state;
+
+                        if (nextChar == '-'
+                            || nextChar >= '0' && nextChar <= '9')
+                        {
+                            state = TokenState.Token_Decimal;
+                            buffer[0] = nextChar;
+                            lexPosition = 1;
+
+                            continue;
+                        }
+                        else if (nextChar >= 'a' && nextChar <= 'z'
+                            || nextChar >= 'A' && nextChar <= 'Z'
+                            || nextChar == '-')
+                        {
+                            state = TokenState.Token_Keyword;
+                            buffer[0] = nextChar;
+                            lexPosition = 1;
+
+                            continue;
+                        }
+                        else if (nextChar == '"' || nextChar == '\'')
+                        {
+                            if (nextChar == '"') state = TokenState.Token_String;
+                            else state = TokenState.Token_Chars;
+
+                            lexPosition = 0;
+                            continue;
+                        }
+                        else if (nextChar == '!') state = TokenState.Token_Variable;
+                        else state = TokenState.Token_Unknown;
+
+                        lexPosition = 0;
+                        continue;
+                    }
+                }
+                else if (state == TokenState.Token_Reference)
+                {
+                    if (nextChar != ':' && lexPosition > 1)
+                    {
+                        int tokenPos = getTokenTableIndex(tokens);
+                        if (tokenPos == -1) return null;
+
+                        tokens[tokenPos] = new Token();
+                        tokens[tokenPos].token = bufferToStringToken(buffer, lexPosition);
+                        tokens[tokenPos].type = state;
+
+                        if (nextChar >= 'a' && nextChar <= 'z'
+                            || nextChar >= 'A' && nextChar <= 'Z')
+                        {
+                            state = TokenState.Token_Keyword;
+                            lexPosition = 1;
+                            buffer[0] = nextChar;
+                            continue;
+                        }
+                        else if (nextChar >= '0' && nextChar <= '9'
+                            || nextChar == '-')
+                        {
+                            state = TokenState.Token_Decimal;
+                            lexPosition = 1;
+                            buffer[0] = nextChar;
+                            continue;
+                        }
+                        else if (nextChar == '!')
+                        {
+                            state = TokenState.Token_Variable;
+                        }
+                        else if (nextChar == '(')
+                        {
+                            state = TokenState.Token_Brackets;
+
+                            buffer[0] = nextChar;
+                            lexPosition = 1;
+
+                            continue;
+                        }
+                        else state = TokenState.Token_Unknown;
+
+                        lexPosition = 0;
+                        continue;
+
+                    }
+                    else if (nextChar != ':')
+                    {
+                        //Console.WriteLine("Error Unknown Char ':' on line {0}", currentLine);
+                        //return null;
+                    }
+                    else
+                    {
+                        buffer[lexPosition] = nextChar;
+                        lexPosition++;
+                    }
+
+                }
+                else if (state == TokenState.Token_Brackets)
+                {
+                    int tokenPos = getTokenTableIndex(tokens);
+                    if (tokenPos == -1) return null;
+
+                    tokens[tokenPos] = new Token();
+                    tokens[tokenPos].token = bufferToStringToken(buffer, lexPosition);
+                    tokens[tokenPos].type = state;
+
+                    Console.WriteLine("Bracket parse: {0}", nextChar);
+
+                    if (nextChar >= 'a' && nextChar <= 'z'
+                        || nextChar >= 'A' && nextChar <= 'Z')
+                    {
+                        Console.WriteLine(".....{0}", nextChar);
+                        state = TokenState.Token_Keyword;
+
+                        lexPosition = 1;
+                        buffer[0] = nextChar;
+                        continue;
+                    }
+                    else if (nextChar >= '0' && nextChar <= '9'
+                        || nextChar == '-')
+                    {
+                        state = TokenState.Token_Decimal;
+
+                        buffer[0] = nextChar;
+                        lexPosition = 1;
+                        continue;
+                    }
+                    else if (nextChar == '\'' || nextChar == '"')
+                    {
+                        if (nextChar == '"') state = TokenState.Token_String;
+                        else state = TokenState.Token_Chars;
+
+                        lexPosition = 0;
+                        continue;
+                    }
+                    else if (nextChar == '!')
+                    {
+                        state = TokenState.Token_Variable;
+
+                        continue;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Unknown char {0}", nextChar);
+                        state = TokenState.Token_Unknown;
+                        continue;
+                    }
+                }
+                else if (state == TokenState.Token_Brackets_Close)
+                {
+
+                    int tokenPos = getTokenTableIndex(tokens);
+                    if (tokenPos == -1) return null;
+
+                    tokens[tokenPos] = new Token();
+                    tokens[tokenPos].token = bufferToStringToken(buffer, lexPosition);
+                    tokens[tokenPos].type = state;
+
+                    if (nextChar != ' ')
+                    {
+                        Console.WriteLine("No empty space after {0}", state);
+                    }
+
+                    state = TokenState.Token_Unknown;
+                    lexPosition = 0;
+                }
                 else if (nextChar == '\n' && state == TokenState.Token_Unknown) continue; // Fuck the new line char!
                 else if (nextChar == '"' && state == TokenState.Token_Unknown)
                 {
@@ -223,7 +441,8 @@ namespace Impulse
                     continue;
                 }
                 else if (nextChar >= 'a' && nextChar <= 'z'
-                        || nextChar >= 'A' && nextChar <= 'Z')
+                        || nextChar >= 'A' && nextChar <= 'Z'
+                        || nextChar == '_')
                 {
                     buffer[0] = nextChar;
                     lexPosition++;
@@ -250,13 +469,39 @@ namespace Impulse
                     lexPosition++;
                     continue;
                 }
+                else if (nextChar == ',')
+                {
+                    state = TokenState.Token_Comma;
+                    buffer[0] = nextChar;
+                    lexPosition++;
+                    
+                    continue;
+                }
+                else if(nextChar == '('
+                    || nextChar == ')')
+                {
+                    if (nextChar == '(')
+                    {
+                        state = TokenState.Token_Brackets;
+                    }
+                    else
+                    {
+                        state = TokenState.Token_Brackets_Close;
+                    }
+
+                    buffer[0] = nextChar;
+                    lexPosition++;
+                    continue;
+                }
+                if (nextChar == '\n') currentLine++; // Line tracking.
             }
             if (state != TokenState.Token_Unknown)
             {
                 if (state == TokenState.Token_Keyword
                     || state == TokenState.Token_Decimal
                     || state == TokenState.Token_Float
-                    || state == TokenState.Token_Operator)
+                    || state == TokenState.Token_Operator
+                    || state == TokenState.Token_Brackets_Close)
                 {
                     int tokenPos = getTokenTableIndex(tokens);
                     if (tokenPos == -1) return null;
@@ -295,3 +540,4 @@ namespace Impulse
         }
     }
 }
+

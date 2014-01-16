@@ -26,14 +26,16 @@ namespace Impulse
 
             for (int i = 0; i < tokens.Length; i++)
             {
-                if(tokens[i].token != null)
+                if (tokens[i].token != null)
+                {
                     Console.WriteLine("| Token {0}: {1} type: {2} |", i, tokens[i].token, tokens[i].type);
-            }
-        }
 
-        private void ParseLine(string line)
-        {
-            
+                    if (tokens[i].type == TokenState.Token_Keyword)
+                    {
+                        //Console.WriteLine("-- Parsing keyword [{0}] as {1}", tokens[i].token, tokens[i].type);
+                    }
+                }
+            }
         }
     }
 }
