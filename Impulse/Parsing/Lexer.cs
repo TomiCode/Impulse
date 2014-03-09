@@ -369,7 +369,6 @@ namespace Impulse
                     if (nextChar >= 'a' && nextChar <= 'z'
                         || nextChar >= 'A' && nextChar <= 'Z')
                     {
-                        Console.WriteLine(".....{0}", nextChar);
                         state = TokenState.Token_Keyword;
 
                         lexPosition = 1;
@@ -396,6 +395,13 @@ namespace Impulse
                     else if (nextChar == '!')
                     {
                         state = TokenState.Token_Variable;
+                        continue;
+                    }
+                    else if (nextChar == ')')
+                    {
+                        state = TokenState.Token_Brackets_Close;
+                        buffer[0] = nextChar;
+                        lexPosition = 1;
 
                         continue;
                     }
@@ -413,12 +419,14 @@ namespace Impulse
                     if (tokenPos == -1) return null;
 
                     tokens[tokenPos] = new Token();
-                    tokens[tokenPos].token = bufferToStringToken(buffer, lexPosition);
+                    tokens[tokenPos].token = bufferToStringToken(buffer, 1);
                     tokens[tokenPos].type = state;
+
+                    Console.WriteLine("Token " + state.ToString() + " buffer: {0}", tokens[tokenPos].token.Length);
 
                     if (nextChar != ' ')
                     {
-                        Console.WriteLine("No empty space after {0}", state);
+                        //Console.WriteLine("No empty space after {0}", state);
                     }
 
                     state = TokenState.Token_Unknown;
