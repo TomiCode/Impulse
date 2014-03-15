@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Debug\Debug.cs" />
     <Compile Include="DefaultTypes.cs" />
     <Compile Include="Parsing\Lexer.cs" />
     <Compile Include="Parsing\Parser.cs" />

@@ -54,8 +54,7 @@ namespace Impulse
 
             if (validateTokens(tokens) != 0)
             {
-                Console.WriteLine("Syntax error! Brackets are not closed property!");
-
+                Debug.drawDebugLine(debugState.Error, "Syntax error! Brackets are not closed property!");
                 return;
             }
 
@@ -66,8 +65,15 @@ namespace Impulse
 
             for (int i = 0; i < tokens.Length && tokens[i].token != null; i++)
             {
-                Console.WriteLine("| Token {0}: {1} type: {2} |", i, tokens[i].token, tokens[i].type);
+                //Console.WriteLine("| Token {0}: {1} type: {2} |", i, tokens[i].token, tokens[i].type);
+                Debug.drawDebugLine(debugState.Debug, string.Format("| Token {0}: {1} type: {2} |", i, tokens[i].token, tokens[i].type));
 
+                if(tokens[i].type == TokenState.Token_Brackets_Close) 
+                {
+                    state = Parser_State.Type_Unknown;
+                    continue;
+
+                }
                 if (state == Parser_State.Type_Unknown)
                 {
                     if (tokens[i].type == TokenState.Token_Keyword)
@@ -77,13 +83,17 @@ namespace Impulse
                     }
                     else if (tokens[i].type == TokenState.Token_Keyword && tokens[i].token.ToLower() == "define")
                     {
+                        Debug.drawDebugLine(debugState.Debug, "Parsing define keyword");
                         state = Parser_State.Type_Definition;
 
                     }
                 }
                 else if (state == Parser_State.Type_Definition)
                 {
-                    Console.WriteLine("Use Definiton: {0} {1}", tokens[i].token, tokens[i].type.ToString());
+                    Debug.drawDebugLine(debugState.Debug, 
+                        string.Format("Use Definiton: {0} {1}", tokens[i].token, tokens[i].type.ToString()));
+
+                    //if (tokens[i].type == TokenState.Token_Keyword) state = Parser_State.Type_Function;
                 }
                 else if (state == Parser_State.Type_Function)
                 {
@@ -91,12 +101,17 @@ namespace Impulse
                     {
                         args[argPosition] = tokens[i].token;
 
-                        Console.WriteLine("Function {0} Got new argument {1}, len: {2}", function, args[argPosition], args[argPosition].Length);
+                        Debug.drawDebugLine(debugState.Debug, 
+                        string.Format("Function {0} Got new argument {1}, len: {2}", function, args[argPosition], args[argPosition].Length));
 
                         argPosition++;
                     }
                     else
                     {
+                        //if (tokens[i].type == TokenState.Token_Keyword && tokens[i].token == "define")
+                        //{
+                        //    state = Parser_State.Type_Definition;
+                        //}
                         //Console.WriteLine("Nothing!@!!");
                     }
                 }
