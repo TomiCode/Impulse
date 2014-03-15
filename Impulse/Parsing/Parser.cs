@@ -3,22 +3,33 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Impulse
 {
     class Parser
     {
-        Lexer lex;
+        private Lexer lex;
+        private parseType currentType;
+        private List<Variable> variables;
+
         public Parser()
         {
             lex = new Lexer();
+            currentType = parseType.Unknown;
+            variables = new List<Variable>();
         }
 
-        enum Parser_State
+        enum parseType
         {
-            Type_Unknown = 0,
-            Type_Function = 1,
-            Type_Definition = 2
+            Definition = 0,
+            Function = 1,
+            Variable = 2,
+            ClassReference = 3,
+            Method = 4,
+            Import = 5,
+            Assign = 6,
+            Unknown = 7
         }
 
         private int validateTokens(Token[] tokens)
@@ -48,9 +59,9 @@ namespace Impulse
             {
                 tokens = lex.LexTextStream(sReader);
             }
+
             if (tokens == null) return;
-            string[] args = new string[128];
-            int argPosition = 0;
+            List<string> arguments = new List<string>();
 
             if (validateTokens(tokens) != 0)
             {
@@ -58,70 +69,94 @@ namespace Impulse
                 return;
             }
 
-            Parser_State state = new Parser_State();
-            string function = "";
-
-            state = Parser_State.Type_Unknown;
-
             for (int i = 0; i < tokens.Length && tokens[i].token != null; i++)
             {
-                //Console.WriteLine("| Token {0}: {1} type: {2} |", i, tokens[i].token, tokens[i].type);
-                Debug.drawDebugLine(debugState.Debug, string.Format("| Token {0}: {1} type: {2} |", i, tokens[i].token, tokens[i].type));
+                Debug.drawDebugLine(debugState.Debug, "| Token {0}: {1} type: {2} |", i, tokens[i].token, tokens[i].type);
+                Debug.drawDebugLine(debugState.Info, "Current parser state: {0}", this.currentType.ToString());
 
-                if(tokens[i].type == TokenState.Token_Brackets_Close) 
+                if(currentType == parseType.Unknown && tokens[i].type == TokenState.Token_Keyword)
                 {
-                    state = Parser_State.Type_Unknown;
-                    continue;
-
-                }
-                if (state == Parser_State.Type_Unknown)
-                {
-                    if (tokens[i].type == TokenState.Token_Keyword)
+                    if (tokens[i].token.ToLower() == "define")
                     {
-                        state = Parser_State.Type_Function;
-                        function = tokens[i].token;
+                        this.currentType = parseType.Definition;
+                        
                     }
-                    else if (tokens[i].type == TokenState.Token_Keyword && tokens[i].token.ToLower() == "define")
+                    else if (tokens[i].token.ToLower() == "import")
                     {
-                        Debug.drawDebugLine(debugState.Debug, "Parsing define keyword");
-                        state = Parser_State.Type_Definition;
-
+                        this.currentType = parseType.Import;
                     }
-                }
-                else if (state == Parser_State.Type_Definition)
-                {
-                    Debug.drawDebugLine(debugState.Debug, 
-                        string.Format("Use Definiton: {0} {1}", tokens[i].token, tokens[i].type.ToString()));
-
-                    //if (tokens[i].type == TokenState.Token_Keyword) state = Parser_State.Type_Function;
-                }
-                else if (state == Parser_State.Type_Function)
-                {
-                    if (tokens[i].type == TokenState.Token_Chars || tokens[i].type == TokenState.Token_String || tokens[i].type == TokenState.Token_Decimal)
+                    else if (tokens[i].token.ToLower() == "stable")
                     {
-                        args[argPosition] = tokens[i].token;
-
-                        Debug.drawDebugLine(debugState.Debug, 
-                        string.Format("Function {0} Got new argument {1}, len: {2}", function, args[argPosition], args[argPosition].Length));
-
-                        argPosition++;
+                        this.currentType = parseType.Variable;
+                    }
+                    else if (Regex.Match(tokens[i].token, "^[a-z][a-zA-Z0-9]+?$").Success)
+                    {
+                        if (tokens.Length > i + 1)
+                        {
+                            if (tokens[i + 1].type == TokenState.Token_Operator)
+                            {
+                                if (tokens[i + 1].token == "=")
+                                {
+                                    this.currentType = parseType.Assign;
+                                    arguments.Add(tokens[i].token);
+                                }
+                            }
+                        }
+                    }
+                    else if (Regex.Match(tokens[i].token, "^[_a-z]+[a-zA-Z]+?$").Success)
+                    {
+                        if (tokens.Length > i + 1)
+                        {
+                            if (tokens[i + 1].type == TokenState.Token_Reference)
+                            {
+                                this.currentType = parseType.ClassReference;
+                            }
+                            else if (tokens[i + 1].type == TokenState.Token_Brackets)
+                            {
+                                this.currentType = parseType.Function;
+                            }
+                            arguments.Add(tokens[i].token);
+                        }
                     }
                     else
                     {
-                        //if (tokens[i].type == TokenState.Token_Keyword && tokens[i].token == "define")
-                        //{
-                        //    state = Parser_State.Type_Definition;
-                        //}
-                        //Console.WriteLine("Nothing!@!!");
+                        Debug.drawDebugLine(debugState.Error, "Cannot parse keyword {0}, token type {1}",
+                                tokens[i].token, tokens[i].type.ToString());
+                    }
+                    continue;
+                }
+
+                else if (this.currentType == parseType.Function)
+                {
+                    if (tokens[i].type == TokenState.Token_Brackets_Close)
+                    {
+                        this.currentType = parseType.Unknown;
+                        string debug = "";
+                        foreach (var a in arguments)
+                        {
+                            debug += a + " ";
+                        }
+                        Debug.drawDebugLine(debugState.Info, debug);
+                        arguments.Clear();
+                    }
+                    else if (tokens[i].type == TokenState.Token_Brackets 
+                        || tokens[i].type == TokenState.Token_Comma)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        arguments.Add(tokens[i].token);
                     }
                 }
-            }
-            object[] obj = new object[1];
-            obj[0] = args;
 
+                
+            }
+
+            //object[] obj = new object[1];
+            //obj[0] = args;
             //this.GetType().GetMethod(function).Invoke(this, obj);
         }
-
 
         public void print(string[] args)
         {

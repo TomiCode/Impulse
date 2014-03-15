@@ -38,10 +38,23 @@ namespace Impulse
 
         public static void drawDebugLine(debugState state, string value)
         {
+            drawDebugLine(state, value, null);
+        }
+
+        [StringFormatMethod("format")]
+        public static void drawDebugLine(debugState state, string format, params object[] args)
+        {
             ConsoleColor currentColor = Console.ForegroundColor;
             Console.ForegroundColor = stateColors[(int)state];
 
-            Console.WriteLine("[{0}] [{1}]: {2}", DateTime.Now.ToLocalTime().ToString("H:m:s"), 
+            string value;
+            if (args != null)
+            {
+                value = string.Format(format, args);
+            }
+            else value = format;
+            
+            Console.WriteLine("[{0}] [{1}]: {2}", DateTime.Now.ToLocalTime().ToString("H:m:s"),
                 statePrefixes[(int)state], value);
 
             Console.ForegroundColor = currentColor;
