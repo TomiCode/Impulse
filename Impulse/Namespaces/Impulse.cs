@@ -8,9 +8,9 @@ namespace Impulse
 {
     class Impulse
     {
-        public virtual bool executeFunctionNamespace()
+        public virtual bool executeFunctionNamespace(params string[] args)
         {
-            Debug.drawDebugLine(debugState.Debug, "{0}:{1}", 1222, 134);
+            Debug.drawDebugLine(debugState.Info, "Call virtual function {1}:{0}", args.Length, args[0]);
             return false;
         }
     }

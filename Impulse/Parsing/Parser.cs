@@ -89,20 +89,6 @@ namespace Impulse
                     {
                         this.currentType = parseType.Variable;
                     }
-                    else if (Regex.Match(tokens[i].token, "^[a-z][a-zA-Z0-9]+?$").Success)
-                    {
-                        if (tokens.Length > i + 1)
-                        {
-                            if (tokens[i + 1].type == TokenState.Token_Operator)
-                            {
-                                if (tokens[i + 1].token == "=")
-                                {
-                                    this.currentType = parseType.Assign;
-                                    arguments.Add(tokens[i].token);
-                                }
-                            }
-                        }
-                    }
                     else if (Regex.Match(tokens[i].token, "^[_a-z]+[a-zA-Z]+?$").Success)
                     {
                         if (tokens.Length > i + 1)
@@ -150,6 +136,47 @@ namespace Impulse
                     }
                 }
 
+                else if (this.currentType == parseType.Variable)
+                {
+                    if (tokens[i].type == TokenState.Token_Variable)
+                    {
+                        Debug.drawDebugLine(debugState.Debug, "Variable definition: {0}", tokens[i].token);
+                        
+                        Variable newVar = new Variable();
+                        newVar.type = Variable.variableType.Not_defined;
+                        newVar.name = tokens[i].token;
+                        variables.Add(newVar);
+
+                        if (tokens.Length > i + 1 &&
+                            tokens[i + 1].type == TokenState.Token_Operator)
+                        { 
+                            Debug.drawDebugLine(debugState.Info, "Variable definition with assign");
+                            arguments.Add(tokens[i].token);
+                        }
+                        else this.currentType = parseType.Unknown;
+                    }
+                    else if (tokens[i].type == TokenState.Token_Operator && tokens[i].token == "=")
+                    {
+                        i += 1;
+                        Debug.drawDebugLine(debugState.Info, "Variable [{0}] was defined with [{1}] type {2}",
+                            arguments[0], tokens[i].token, tokens[i].type.ToString());
+
+                        Variable.variableType currentTokenType = getVariableType(tokens[i].type);
+                        if (currentTokenType == Variable.variableType.Not_defined)
+                        {
+                            Debug.drawDebugLine(debugState.Warning, "Variable {0} got type {1}", arguments[0], currentTokenType.ToString());
+                        }
+
+                        assignVariableToValue(arguments[0], tokens[i].token, currentTokenType);
+                        arguments.Clear();
+                        this.currentType = parseType.Unknown;
+                    }
+                    else
+                    {
+                        Debug.drawDebugLine(debugState.Error, "Variable definition is ambiguous!");
+                    }
+                }
+
                 
             }
 
@@ -158,9 +185,46 @@ namespace Impulse
             //this.GetType().GetMethod(function).Invoke(this, obj);
         }
 
+        private bool assignVariableToValue(string name, string value, Variable.variableType type)
+        {
+            for (int i = 0; i < this.variables.Count; i++)
+            {
+                if (this.variables[i].name == name)
+                {
+                    this.variables[i].value = value;
+                    this.variables[i].type = type;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private Variable.variableType getVariableType(TokenState state)
+        {
+            if (state == TokenState.Token_String) return Variable.variableType.String;
+            else if (state == TokenState.Token_Chars) return Variable.variableType.Chars;
+            else if (state == TokenState.Token_Decimal) return Variable.variableType.Decimal;
+            else if (state == TokenState.Token_Float) return Variable.variableType.Float;
+            else return Variable.variableType.Not_defined;
+        }
+
         public void print(string[] args)
         {
             Console.WriteLine("Function Call: [Print] {0}, {1}", args.Length, args[0]);
+        }
+
+        //
+        // DEBUG Only.
+        //
+
+        public void showAllVariables()
+        {
+            Console.WriteLine("\n\n== System Variables\n");
+            foreach (var thisVar in variables)
+            {
+                Console.WriteLine(thisVar.ToString());
+            }
+            Console.WriteLine("\n== End of System Variables\n");
         }
     }
 }

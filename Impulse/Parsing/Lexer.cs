@@ -168,7 +168,7 @@ namespace Impulse
                             if (nextChar == ',') state = TokenState.Token_Comma;
                             else if (nextChar == ')') state = TokenState.Token_Brackets_Close;
                             buffer[0] = nextChar;
-                            lexPosition++;
+                            lexPosition = 1;
 
                             continue;
                         }
@@ -250,7 +250,7 @@ namespace Impulse
                     if (nextChar == ' '
                         || nextChar >= 'a' && nextChar <= 'z'
                         || nextChar >= 'A' && nextChar <= 'Z'
-                        || nextChar == '!'
+                        || nextChar == '@'
                         || nextChar >= '0' && nextChar <= '9'
                         || nextChar == '-'
                         || nextChar == '\''
@@ -290,7 +290,7 @@ namespace Impulse
                             lexPosition = 0;
                             continue;
                         }
-                        else if (nextChar == '!') state = TokenState.Token_Variable;
+                        else if (nextChar == '@') state = TokenState.Token_Variable;
                         else state = TokenState.Token_Unknown;
 
                         lexPosition = 0;
@@ -324,7 +324,7 @@ namespace Impulse
                             buffer[0] = nextChar;
                             continue;
                         }
-                        else if (nextChar == '!')
+                        else if (nextChar == '@')
                         {
                             state = TokenState.Token_Variable;
                         }
@@ -392,7 +392,7 @@ namespace Impulse
                         lexPosition = 0;
                         continue;
                     }
-                    else if (nextChar == '!')
+                    else if (nextChar == '@')
                     {
                         state = TokenState.Token_Variable;
                         continue;
@@ -443,7 +443,7 @@ namespace Impulse
                     state = TokenState.Token_Chars;
                     continue;
                 }
-                else if (nextChar == '!')
+                else if (nextChar == '@')
                 {
                     state = TokenState.Token_Variable;
                     continue;
@@ -481,7 +481,7 @@ namespace Impulse
                 {
                     state = TokenState.Token_Comma;
                     buffer[0] = nextChar;
-                    lexPosition++;
+                    lexPosition = 1;
                     
                     continue;
                 }
