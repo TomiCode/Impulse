@@ -395,6 +395,7 @@ namespace Impulse
                     else if (nextChar == '@')
                     {
                         state = TokenState.Token_Variable;
+                        lexPosition = 0;
                         continue;
                     }
                     else if (nextChar == ')')
