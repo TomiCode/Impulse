@@ -8,14 +8,31 @@ namespace Impulse
 {
     class Functions
     {
-        public void print(params string[] input)
+        public void print(params Argument[] input)
         {
-            string disply = "";
             foreach (var i in input)
             {
-                disply += i;
+                Console.Write(i.value);
             }
-            Console.WriteLine(disply);
+        }
+
+        public void read(params Argument[] arg)
+        {
+            if (arg.Length > 0 && arg.Length < 2)
+            {
+                if (arg[0].type == TokenState.Token_Variable)
+                {
+
+                }
+                else
+                {
+                    Console.WriteLine("ERROR PRINT " + arg.GetType());
+                }
+            }
+            else
+            {
+                Console.ReadLine();
+            }
         }
     }
 }

@@ -7,6 +7,24 @@ using System.Text.RegularExpressions;
 
 namespace Impulse
 {
+    struct Argument
+    {
+        public string value;
+        public TokenState type;
+
+        public Argument(TokenState type, string value)
+        {
+            this.value = value;
+            this.type = type;
+        }
+
+        public Argument(string value)
+        {
+            this.value = value;
+            this.type = TokenState.Token_String;
+        }
+    }
+
     class Parser
     {
         private Lexer lex;
@@ -62,7 +80,7 @@ namespace Impulse
             }
 
             if (tokens == null) return;
-            List<string> arguments = new List<string>();
+            List<Argument> arguments = new List<Argument>();
 
             if (validateTokens(tokens) != 0)
             {
@@ -102,7 +120,7 @@ namespace Impulse
                             {
                                 this.currentType = parseType.Function;
                             }
-                            arguments.Add(tokens[i].token);
+                            arguments.Add(new Argument(tokens[i].type, tokens[i].token));
                         }
                     }
                     else
@@ -127,10 +145,10 @@ namespace Impulse
 
                         Functions f = new Functions();
                         Object[] o = new Object[1];
-                        string function = arguments[0];
-                        arguments.Remove(function);
-
+                        string function = arguments[0].value;
+                        arguments.Remove(arguments[0]);
                         o[0] = arguments.ToArray();
+                       
                         try
                         {
                             f.GetType().GetMethod(function).Invoke(f, o);
@@ -143,7 +161,7 @@ namespace Impulse
                             }
                             else
                             {
-                                Debug.drawDebugLine(debugState.Error, "Exception 0x{0:x}", ex.HResult);
+                                Debug.drawDebugLine(debugState.Error, "{0}", ex.Message);
                             }
                         }
 
@@ -161,7 +179,7 @@ namespace Impulse
 
                         if (value != null)
                         {
-                            arguments.Add(value);
+                            arguments.Add(new Argument(value));
                         }
                         else
                         {
@@ -170,7 +188,7 @@ namespace Impulse
                     }
                     else
                     {
-                        arguments.Add(tokens[i].token);
+                        arguments.Add(new Argument(tokens[i].token));
                     }
                 }
 
@@ -190,7 +208,7 @@ namespace Impulse
                             tokens[i + 1].type == TokenState.Token_Operator)
                         { 
                             Debug.drawDebugLine(debugState.Info, "Variable definition with assign");
-                            arguments.Add(tokens[i].token);
+                            arguments.Add(new Argument(tokens[i].token));
                         }
                         else this.currentType = parseType.Unknown;
                     }
@@ -206,7 +224,7 @@ namespace Impulse
                             Debug.drawDebugLine(debugState.Warning, "Variable {0} got type {1}", arguments[0], currentTokenType.ToString());
                         }
 
-                        assignVariableToValue(arguments[0], tokens[i].token, currentTokenType);
+                        assignVariableToValue(arguments[0].value, tokens[i].token, currentTokenType);
                         arguments.Clear();
                         this.currentType = parseType.Unknown;
                     }
@@ -220,14 +238,14 @@ namespace Impulse
                     string value = "";
                     Variable.variableType type;
 
-                    if ((value = getVariableValue(arguments[0], out type)) == null)
+                    if ((value = getVariableValue(arguments[0].value, out type)) == null)
                     {
                         Debug.drawDebugLine(debugState.Warning, "Definition: Variable {0} not defined!", arguments[0]);
                         continue;
                     }
                     else
                     {
-                        if (arguments[1] == "=")
+                        if (arguments[1].value == "=")
                         {
                             if (tokens[i].type == TokenState.Token_Float
                                 || tokens[i].type == TokenState.Token_Decimal
@@ -241,7 +259,7 @@ namespace Impulse
                                         arguments[0], type.ToString(), newType.ToString());
                                 }
 
-                                assignVariableToValue(arguments[0], tokens[i].token, newType);
+                                assignVariableToValue(arguments[0].value, tokens[i].token, newType);
                             }
                         }
                     }
@@ -256,21 +274,15 @@ namespace Impulse
                         {
                             Debug.drawDebugLine(debugState.Debug, "Adding variable [{0}] operation: {1} => Arguments len {2}",
                                 tokens[i].token, tokens[i + 1].token, arguments.Count);
-                            arguments.Add(tokens[i].token);
-                            arguments.Add(tokens[i + 1].token);
+                            arguments.Add(new Argument(tokens[i].token));
+                            arguments.Add(new Argument(tokens[i + 1].token));
 
                             i++;
                             this.currentType = parseType.Variable_operation;
                         }
                     }
                 }
-
-                
             }
-
-            //object[] obj = new object[1];
-            //obj[0] = args;
-            //this.GetType().GetMethod(function).Invoke(this, obj);
         }
 
         private string getVariableValue(string name, out Variable.variableType type)
