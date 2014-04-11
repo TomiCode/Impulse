@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Impulse.Variable;
 
 namespace Impulse
 {
@@ -99,6 +98,15 @@ namespace Impulse
             }
 
             Debug.drawDebugLine(debugState.Debug, "Cleared {0} variables (with scopeValue {1})", clearCount, scopeValue);
+        }
+
+        public Variable.variableType variableType(TokenState state)
+        {
+            if (state == TokenState.Token_String) return Variable.variableType.String;
+            else if (state == TokenState.Token_Chars) return Variable.variableType.Chars;
+            else if (state == TokenState.Token_Decimal) return Variable.variableType.Decimal;
+            else if (state == TokenState.Token_Float) return Variable.variableType.Float;
+            else return Variable.variableType.Not_defined;
         }
 
         public void printAllVariables()

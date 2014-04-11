@@ -19,8 +19,6 @@ namespace Impulse
             Parser parser = new Parser();
             parser.ParseFile("");
 
-            parser.showAllVariables();
-
             Console.WriteLine("Application end. Press any key to exit.");
             Console.ReadKey(true);
         }
