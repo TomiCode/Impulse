@@ -210,7 +210,7 @@ namespace Impulse
 
         public string ShowInfo()
         {
-            return string.Format(" @{0} => {1} : {2}  [{3} : {4}]", this.name, this.value, this.type.ToString(), this.currentScope.ToString(), this.scopeValue);
+            return string.Format(" @{0} => {1} : {2}  [{3} : {4}]", this.name, this.value, this.type.ToString(), this.currentScope.ToString(), this.scopeValue == null ? "nil" : this.scopeValue);
         }
     }
 }

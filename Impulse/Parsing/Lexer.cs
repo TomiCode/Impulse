@@ -198,7 +198,14 @@ namespace Impulse
                 }
                 else if (state == TokenState.Token_Operator)
                 {
-                    if (nextChar == '-'
+                    if (nextChar == '='
+                        || nextChar == '+'
+                        || nextChar == '-')
+                    {
+                        buffer[lexPosition] = nextChar;
+                        lexPosition++;
+                    }
+                    else if (nextChar == '-'
                         || (nextChar >= '0' && nextChar <= '9')
                         || nextChar == '"'
                         || nextChar == '\''

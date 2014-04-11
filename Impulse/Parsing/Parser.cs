@@ -83,6 +83,7 @@ namespace Impulse
             }
 
             this.parseTokens(tokens);
+            this.variables.printAllVariables();
         }
 
         private void parseTokens(Token[] tokens)
@@ -124,7 +125,24 @@ namespace Impulse
                     else Debug.drawDebugLine(debugState.Error, "Can not parse keyword {0}, token type {1}", tokens[i].token, tokens[i].type.ToString());
                     continue;
                 }
+                else if (this.currentType == parseType.Unknown && tokens[i].type == TokenState.Token_Variable)
+                {
+                    if (tokens.Length > i + 1)
+                    {
+                        arguments.Add(new Argument(tokens[i].type, tokens[i].token));
 
+                        if (tokens[i + 1].type == TokenState.Token_Operator)
+                        {
+                            i++;
+                            arguments.Add(new Argument(tokens[i].type, tokens[i].token));
+                            this.currentType = parseType.Variable_operation;
+                        }
+                        else
+                        {
+                            Debug.drawDebugLine(debugState.Warning, "Weird, something is wrong with the variable.");
+                        }
+                    }
+                }
                 else if (this.currentType == parseType.Variable_definition)
                 {
                     if (tokens[i].type == TokenState.Token_Variable)
@@ -147,7 +165,7 @@ namespace Impulse
                     else if (tokens[i].type == TokenState.Token_Operator && tokens[i].token == "=")
                     {
                         i++;
-                        Debug.drawDebugLine(debugState.Info, "Variable [{0}] was defined with [{1}] type {2}", arguments[0], tokens[i].token, tokens[i].type.ToString());
+                        Debug.drawDebugLine(debugState.Info, "Variable [{0}] was defined with [{1}] type {2}", arguments[0].value, tokens[i].token, tokens[i].type.ToString());
                         variables.addVariable(arguments[0].value, tokens[i].token, variables.variableType(tokens[i].type));
 
                         arguments.Clear();
@@ -157,6 +175,10 @@ namespace Impulse
                     {
                         Debug.drawDebugLine(debugState.Error, "Variable definition is ambiguous!");
                     }
+                }
+                else if (this.currentType == parseType.Variable_operation)
+                {
+                    Debug.drawDebugLine(debugState.Info, "Operation {1} {0}", tokens[i].token, arguments[1].value);
                 }
             }
         }
