@@ -300,19 +300,7 @@ namespace Impulse
             return null;
         }
 
-        private bool assignVariableToValue(string name, string value, Variable.variableType type)
-        {
-            for (int i = 0; i < this.variables.Count; i++)
-            {
-                if (this.variables[i].name == name)
-                {
-                    this.variables[i].value = value;
-                    this.variables[i].type = type;
-                    return true;
-                }
-            }
-            return false;
-        }
+ 
 
         private Variable.variableType getVariableType(TokenState state)
         {
@@ -321,20 +309,6 @@ namespace Impulse
             else if (state == TokenState.Token_Decimal) return Variable.variableType.Decimal;
             else if (state == TokenState.Token_Float) return Variable.variableType.Float;
             else return Variable.variableType.Not_defined;
-        }
-
-        //
-        // DEBUG Only.
-        //
-
-        public void showAllVariables()
-        {
-            Console.WriteLine("\n\n== System Variables\n");
-            foreach (var thisVar in variables)
-            {
-                Console.WriteLine(thisVar.ToString());
-            }
-            Console.WriteLine("\n== End of System Variables\n");
         }
     }
 }
