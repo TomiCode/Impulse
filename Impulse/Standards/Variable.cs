@@ -3,214 +3,46 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections;
 
 namespace Impulse
 {
-    class Variables
+  class Variables
+  {
+    static Hashtable variables = new Hashtable();
+
+    public static bool isSet(string variable)
     {
-        private List<Variable> variables;
-
-        public Variables()
-        {
-            this.variables = new List<Variable>();
-        }
-
-        public Variable getVariable(string name)
-        {
-            return this.getVariable(name, Variable.variableScope.File);
-        }
-
-        public Variable getVariable(string name, Variable.variableScope scope)
-        {
-            for (int i = 0; i < this.variables.Count; i++)
-            {
-                if (this.variables[i].name == name && this.variables[i].currentScope == scope)
-                {
-                    return this.variables[i];
-                }
-            }
-            return null;
-        }
-
-        public void addVariable(string name)
-        {
-            this.addVariable(name, "", Variable.variableType.Not_defined, Variable.variableScope.File);
-        }
-
-        public void addVariable(string name, string value, Variable.variableType type)
-        {
-            this.addVariable(name, value, type, Variable.variableScope.File);
-        }
-
-        public void addVariable(string name, string value, Variable.variableType type, Variable.variableScope scope)
-        {
-            bool isVariableDefined = false;
-            for (int i = 0; i < this.variables.Count; i++)
-            {
-                if (this.variables[i].name == name)
-                {
-                    isVariableDefined = true;
-                    break;
-                }
-            }
-
-            if (!isVariableDefined)
-            {
-                this.variables.Add(new Variable(name, type, value, scope));
-            }
-            else
-            {
-                Debug.drawDebugLine(debugState.Warning, "Variable {0} has multiple definitions!", name); 
-            }
-        }
-
-        public bool setVariableValue(string name, string value, Variable.variableType type)
-        {
-            for (int i = 0; i < this.variables.Count; i++)
-            {
-                if (this.variables[i].name == name)
-                {
-                    if (this.variables[i].type == type)
-                    {
-                        this.variables[i].value = value;
-                    }
-                    else
-                    {
-                        Debug.drawDebugLine(debugState.Error, "Variable {0}: type confusion! ({1} to {2})", name, this.variables[i].type.ToString(), type.ToString());
-                    }
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public void clearLocalVariables(string scopeValue)
-        {
-            int clearCount = 0;
-
-            for (int i = 0; i < this.variables.Count; i++)
-            {
-                if (this.variables[i].currentScope == Variable.variableScope.Local && this.variables[i].scopeValue == scopeValue)
-                {
-                    this.variables.Remove(this.variables[i]);
-                    clearCount++;
-                }
-            }
-
-            Debug.drawDebugLine(debugState.Debug, "Cleared {0} variables (with scopeValue {1})", clearCount, scopeValue);
-        }
-
-        public Variable.variableType variableType(TokenState state)
-        {
-            if (state == TokenState.Token_String) return Variable.variableType.String;
-            else if (state == TokenState.Token_Chars) return Variable.variableType.Chars;
-            else if (state == TokenState.Token_Decimal) return Variable.variableType.Decimal;
-            else if (state == TokenState.Token_Float) return Variable.variableType.Float;
-            else return Variable.variableType.Not_defined;
-        }
-
-        public void printAllVariables()
-        {
-            Console.WriteLine("\n\n== Variables\n");
-            for (int i = 0; i < this.variables.Count; i++)
-			{
-                Console.WriteLine(this.variables[i].ShowInfo());
-            }
-            Console.WriteLine("\n== End of Variable Table\n");
-        }
+      return Variables.variables.ContainsKey(variables);
     }
 
-    class Variable
+    public static void setValue(string variable, object content)
     {
-        public Variable(string name, variableType type, variableScope scope)
-        {
-            this.name = name;
-            this.type = type;
-            this.myScope = new varScope(scope);
-            this.value = null;
-        }
-
-        public Variable(string name, variableType type, variableScope scope, string scopeValue)
-        {
-            this.name = name;
-            this.type = type;
-            this.myScope = new varScope(scope, scopeValue);
-            this.value = null;
-        }
-
-        public Variable(string name, variableType type, string value, variableScope scope)
-        {
-            this.name = name;
-            this.type = type;
-            this.value = value;
-            this.myScope = new varScope(scope);
-        }
-
-        public Variable(string name, variableType type, string value, variableScope scope, string scopeValue)
-        {
-            this.name = name;
-            this.type = type;
-            this.value = value;
-            this.myScope = new varScope(scope, scopeValue);
-        }
-
-        public struct varScope
-        {
-            public string value;
-            public variableScope scope;
-
-            public varScope(variableScope scope)
-            {
-                this.value = null;
-                this.scope = scope;
-            }
-
-            public varScope(variableScope scope, string value)
-            {
-                this.value = value;
-                this.scope = scope;
-            }
-        }
-
-        public enum variableType
-        {
-            String = 0,
-            Decimal = 1,
-            Float = 2,
-            Chars = 3,
-            Not_defined = 4
-        }
-
-        public enum variableScope
-        {
-            Global = 0,
-            File = 1,
-            Local = 2
-        }
-
-        public string name;
-        public variableType type;
-        varScope myScope;
-        public string value;
-
-        public variableScope currentScope
-        {
-            get { return this.myScope.scope; }
-        }
-
-        public string scopeValue
-        {
-            get { return this.myScope.value; }
-        }
-
-        public override string ToString()
-        {
-            return string.Format(" @{0} ==> {1} : {2}", this.name, this.value, this.type.ToString());
-        }
-
-        public string ShowInfo()
-        {
-            return string.Format(" @{0} => {1} : {2}  [{3} : {4}]", this.name, this.value, this.type.ToString(), this.currentScope.ToString(), this.scopeValue == null ? "nil" : this.scopeValue);
-        }
+      if(!Variables.isSet(variable)) {
+        Debug.drawDebugLine(debugState.Debug, "Creating variable '{0}' with type {1}.", variable, content.GetType().ToString());
+      }
+      else {
+        Debug.drawDebugLine(debugState.Info, "Variable {0} maps type {1}. New type: {2}.", variable, 
+          Variables.variables[variable].GetType().ToString(), content.GetType().ToString());
+      }
+      Variables.variables.Add(variable, content);
     }
+
+    public static object getValue(string variable)
+    {
+      if(!Variables.isSet(variable)) {
+        Debug.drawDebugLine(debugState.Warning, "Accessing undefined variable '{0}'!", variable);
+        return null;
+      }
+      return Variables.variables[variable];
+    }
+
+    public static void printContent()
+    {
+      Console.WriteLine("\n\n--- Variable debug print ---");
+      foreach(DictionaryEntry variable in Variables.variables) {
+        Console.WriteLine(" '{0}' => '{1}' [{2}]", variable.Key, variable.Value, variable.Value.GetType().ToString());
+      }
+    }
+  }
 }

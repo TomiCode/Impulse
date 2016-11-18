@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Reflection;
+using System.Globalization;
 
 namespace Impulse
 {
@@ -36,15 +37,15 @@ namespace Impulse
   {
     private Lexer lex;
     private parseType currentType;
-    private List<Argument> arguments;
-    private Variables variables;
+    private List<Token> operation;
+    // private Variables variables;
 
     public Parser()
     {
       lex = new Lexer();
       currentType = parseType.Unknown;
-      arguments = new List<Argument>();
-      variables = new Variables();
+      operation = new List<Token>();
+      // variables = new Variables();
     }
 
     public enum parseType
@@ -86,7 +87,9 @@ namespace Impulse
       }
 
       this.parseTokens(tokens);
-      this.variables.printAllVariables();
+
+      Variables.printContent();
+      // this.variables.printAllVariables();
     }
 
     private void parseTokens(Token[] tokens)
@@ -96,22 +99,22 @@ namespace Impulse
 
         if(currentType == parseType.Function) {
           if(tokens[i].type == TokenState.Token_Decimal || tokens[i].type == TokenState.Token_Float || tokens[i].type == TokenState.Token_String) {
-            arguments.Add(new Argument(tokens[i]));
+            operation.Add(tokens[i]);
           }
           else if(tokens[i].type == TokenState.Token_Brackets_Close) {
-            if(arguments[0].type != TokenState.Token_Keyword) {
-              Debug.drawDebugLine(debugState.Warning, "Not a function! ({0}).", arguments[0].type.ToString());
+            if(operation[0].type != TokenState.Token_Keyword) {
+              Debug.drawDebugLine(debugState.Warning, "Not a function! ({0}). :(", operation[0].type.ToString());
             }
             else {
-              Debug.drawDebugLine(debugState.Info, "Method '{0}' call.", arguments[0].value);
+              Debug.drawDebugLine(debugState.Info, "Method '{0}' call.", operation[0].token);
               try {
-                Impulse.callStdMethod(arguments[0].value, arguments.Skip(1).ToArray());
+                // Impulse.callStdMethod(arguments[0].token, arguments.Skip(1).ToArray());
               }
               catch(Exception ex) {
-                Debug.drawDebugLine(debugState.Error, "Function '{0}' error: {1}", arguments[0].value, ex.Message);
+                Debug.drawDebugLine(debugState.Error, "Function '{0}' error: {1}", operation[0].token, ex.Message);
               }
             }
-            arguments.Clear();
+            operation.Clear();
             currentType = parseType.Unknown;
           }
         }
@@ -133,7 +136,7 @@ namespace Impulse
               else if(tokens[i + 1].type == TokenState.Token_Brackets) {
                 this.currentType = parseType.Function;
               }
-              arguments.Add(new Argument(tokens[i].type, tokens[i].token));
+              operation.Add(tokens[i]);
             }
           }
           else Debug.drawDebugLine(debugState.Error, "Can not parse keyword {0}, token type {1}", tokens[i].token, tokens[i].type.ToString());
@@ -141,11 +144,11 @@ namespace Impulse
         }
         else if(this.currentType == parseType.Unknown && tokens[i].type == TokenState.Token_Variable) {
           if(tokens.Length > i + 1) {
-            arguments.Add(new Argument(tokens[i].type, tokens[i].token));
+            operation.Add(tokens[i]);
 
             if(tokens[i + 1].type == TokenState.Token_Operator) {
               i++;
-              arguments.Add(new Argument(tokens[i].type, tokens[i].token));
+              operation.Add(tokens[i]);
               this.currentType = parseType.Variable_operation;
             }
             else {
@@ -159,21 +162,54 @@ namespace Impulse
 
             if(tokens.Length > i + 1 && tokens[i + 1].type == TokenState.Token_Operator) {
               Debug.drawDebugLine(debugState.Info, "Variable waiting for assing..");
-              arguments.Add(new Argument(tokens[i].type, tokens[i].token));
+              operation.Add(tokens[i]);
             }
             else {
-              variables.addVariable(tokens[i].token);
-              //arguments.Clear();
-
+              // __Variable.setValue(tokens[i].)
+              // variables.addVariable(tokens[i].token);
+              // arguments.Clear();
+              Variables.setValue(tokens[i].token, null);
               this.currentType = parseType.Unknown;
             }
           }
           else if(tokens[i].type == TokenState.Token_Operator && tokens[i].token == "=") {
             i++;
-            Debug.drawDebugLine(debugState.Info, "Variable [{0}] was defined with [{1}] type {2}", arguments[0].value, tokens[i].token, tokens[i].type.ToString());
-            variables.addVariable(arguments[0].value, tokens[i].token, variables.variableType(tokens[i].type));
+            Debug.drawDebugLine(debugState.Info, "Variable [{0}] was defined with [{1}] type {2}", 
+              operation[0].token, tokens[i].token, tokens[i].type.ToString());
 
-            arguments.Clear();
+            object varContent = null;
+            if(tokens[i].type == TokenState.Token_Decimal) {
+              decimal tmpVariable = 0;
+
+              if(!decimal.TryParse(tokens[i].token, out tmpVariable)) {
+                Debug.drawDebugLine(debugState.Error, "Conversion number to decimal failed!");
+              }
+              else {
+                varContent = tmpVariable;
+              }
+            }
+            else if(tokens[i].type == TokenState.Token_Float) {
+              float tmpVariable = 0;
+
+              if(!float.TryParse(tokens[i].token, NumberStyles.Float, CultureInfo.InvariantCulture, out tmpVariable)) {
+                Debug.drawDebugLine(debugState.Error, "Convertion number to float failed!");
+              }
+              else {
+                varContent = tmpVariable;
+              }
+            }
+            else if(tokens[i].type == TokenState.Token_String) {
+              varContent = tokens[i].token;
+            }
+
+            if(varContent != null) {
+              Variables.setValue(operation[0].token, varContent);
+            }
+            else {
+              Debug.drawDebugLine(debugState.Warning, "Invalid variable declaration!");
+            }
+
+            operation.Clear();
             this.currentType = parseType.Unknown;
           }
           else {
@@ -181,7 +217,7 @@ namespace Impulse
           }
         }
         else if(this.currentType == parseType.Variable_operation) {
-          Debug.drawDebugLine(debugState.Info, "Operation {1} {0}", tokens[i].token, arguments[1].value);
+          Debug.drawDebugLine(debugState.Info, "Operation {1} {0}", tokens[i].token, operation[1].token);
         }
       }
     }
