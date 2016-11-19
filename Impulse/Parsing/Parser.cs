@@ -76,14 +76,32 @@ namespace Impulse
           if(tokens[i].type == TokenState.Token_Decimal || tokens[i].type == TokenState.Token_Float 
             || tokens[i].type == TokenState.Token_String || tokens[i].type == TokenState.Token_Chars) {
 
-              LocalArguments.addArgument(this.tokenToSystemObject(tokens[i]));
+              LocalArguments.addArgument(new ParameterObject(this.tokenToSystemObject(tokens[i])));
             // operation.Add(tokens[i]);
           }
           else if(tokens[i].type == TokenState.Token_Variable) {
             LocalArguments.addArgument(new VariableObject(tokens[i].token));
           }
           else if(tokens[i].type == TokenState.Token_Brackets_Close) {
+            object result = null;
 
+            if(outVariable == null && Impulse.hasResult()) {
+              Debug.drawDebugLine(debugState.Warning, "Function has a result type, calling without a destination.");
+            }
+
+            try {
+              result = Impulse.callFunction();
+            }
+            catch(Exception ex) {
+              Debug.drawDebugLine(debugState.Error, "Function '{0}' error: {1}", Impulse.getFunctionName(), ex.Message);
+            }
+
+            if(result != null) {
+              Debug.drawDebugLine(debugState.Info, "Result type {0} value {1}.", result.GetType().ToString(), result);
+              if(outVariable != null) {
+                outVariable.setValue(result);
+              }
+            }
             //if(operation[0].type != TokenState.Token_Keyword) {
             //  Debug.drawDebugLine(debugState.Warning, "Not a function! ({0}). :(", operation[0].type.ToString());
             //}
@@ -121,8 +139,8 @@ namespace Impulse
             || tokens[i].type == TokenState.Token_String) {
 
             outVariable.setValue(this.tokenToSystemObject(tokens[i]));
+            this.currentType = parseType.Unknown;
           }
-          this.currentType = parseType.Unknown;
         }
         else if(this.currentType == parseType.Unknown && tokens[i].type == TokenState.Token_Keyword) {
           // if(tokens[i].token.ToLower() == "define") {

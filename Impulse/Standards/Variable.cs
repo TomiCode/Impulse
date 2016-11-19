@@ -28,12 +28,10 @@ namespace Impulse
       }
       else {
         if(content == null) {
-          Debug.drawDebugLine(debugState.Info, "Variable {0} maps type {1}. New type: nil.", variable,
-            Variables.variables[(string)variable].GetType().ToString());
+          Debug.drawDebugLine(debugState.Info, "Set variable '{0}' => nil", variable);
         }
         else {
-          Debug.drawDebugLine(debugState.Info, "Variable {0} maps type {1}. New type: {2}.", variable,
-            Variables.variables[(string)variable].GetType().ToString(), content.GetType().ToString());
+          Debug.drawDebugLine(debugState.Info, "Set variable '{0}' => {1}", variable, content.GetType().ToString());
         }
       }
       Variables.variables[(string)variable] = content;
@@ -64,7 +62,7 @@ namespace Impulse
 
   class LocalArguments
   {
-    static List<object> arguments = new List<object>();
+    static List<IVariable> arguments = new List<IVariable>();
 
     public static object getArgument(int index)
     {
@@ -91,14 +89,14 @@ namespace Impulse
       return LocalArguments.arguments.ToArray();
     }
 
-    public static void addArgument(object arg)
+    public static void addArgument(IVariable arg)
     {
       LocalArguments.arguments.Add(arg);
     }
 
     public static object[] getFunctionParameters(Type param)
     {
-      if(param == typeof(object[])) {
+      if(param == typeof(IVariable[])) {
         return new object[] { LocalArguments.arguments.ToArray() };
       }
       else {
@@ -118,7 +116,15 @@ namespace Impulse
     }
   }
 
-  class VariableObject
+  interface IVariable
+  {
+    T getValue<T>();
+    Type getType();
+    bool setValue(object value);
+    string ToString();
+  }
+
+  class VariableObject : IVariable
   {
     private string name = "";
     private bool create = false;
@@ -135,13 +141,29 @@ namespace Impulse
 
     public VariableObject(string name) : this(name, false) { }
 
-    public object getValue()
+    public T getValue<T>()
     {
       if(Variables.isSet(this.name)) {
-        Debug.drawDebugLine(debugState.Warning, "Variable '{0}' is not accesible.", this.name);
-        return null;
+        object value = Variables.getValue(this.name);
+        Debug.drawDebugLine(debugState.Info, "getValue with type {0}, current value: {1}.", typeof(T).ToString(), value);
+
+        if(value != null && value.GetType() == typeof(T)) {
+          return (T)value;
+        }
       }
-      return Variables.getValue(this.name);
+
+      Debug.drawDebugLine(debugState.Warning, "Variable '{0}' is not accesible.", this.name);
+      return default(T);
+    }
+
+    public Type getType()
+    {
+      object value = Variables.getValue(this.name);
+
+      if(value != null) {
+        return value.GetType();
+      }
+      else return null;
     }
 
     public bool setValue(object value)
@@ -153,6 +175,56 @@ namespace Impulse
 
       Debug.drawDebugLine(debugState.Error, "Can not write to undefined variable '{0}'!", this.name);
       return false;
+    }
+
+    public override string ToString()
+    {
+      object value = Variables.getValue(this.name);
+      if(value == null)
+        return "nil";
+
+      return value.ToString();
+    }
+  }
+
+  class ParameterObject : IVariable
+  {
+    private object value;
+
+    public ParameterObject(object value)
+    {
+      this.value = value;
+    }
+
+    public T getValue<T>()
+    {
+      if(value != null) {
+        if(value.GetType() == typeof(T)) {
+          return (T)value;
+        }
+      }
+      return default(T);
+    }
+
+    public Type getType()
+    {
+      if(this.value == null)
+        return null;
+
+      return this.value.GetType();
+    }
+
+    public bool setValue(object value)
+    {
+      return false;
+    }
+
+    public override string ToString()
+    {
+      if(this.value == null)
+        return "nil";
+
+      return this.value.ToString();
     }
   }
 }
