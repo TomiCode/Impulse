@@ -9,23 +9,34 @@ namespace Impulse
 {
   class Variables
   {
-    static Hashtable variables = new Hashtable();
+    static Hashtable variables = new Hashtable(StringComparer.InvariantCulture);
 
     public static bool isSet(string variable)
     {
-      return Variables.variables.ContainsKey(variables);
+      return Variables.variables.ContainsKey((string)variable);
     }
 
     public static void setValue(string variable, object content)
     {
       if(!Variables.isSet(variable)) {
-        Debug.drawDebugLine(debugState.Debug, "Creating variable '{0}' with type {1}.", variable, content.GetType().ToString());
+        if(content == null) {
+          Debug.drawDebugLine(debugState.Debug, "Creating variable '{0}' without value.", variable);
+        }
+        else {
+          Debug.drawDebugLine(debugState.Debug, "Creating variable '{0}' with type {1}.", variable, content.GetType().ToString());
+        }
       }
       else {
-        Debug.drawDebugLine(debugState.Info, "Variable {0} maps type {1}. New type: {2}.", variable, 
-          Variables.variables[variable].GetType().ToString(), content.GetType().ToString());
+        if(content == null) {
+          Debug.drawDebugLine(debugState.Info, "Variable {0} maps type {1}. New type: nil.", variable,
+            Variables.variables[(string)variable].GetType().ToString());
+        }
+        else {
+          Debug.drawDebugLine(debugState.Info, "Variable {0} maps type {1}. New type: {2}.", variable,
+            Variables.variables[(string)variable].GetType().ToString(), content.GetType().ToString());
+        }
       }
-      Variables.variables.Add(variable, content);
+      Variables.variables[(string)variable] = content;
     }
 
     public static object getValue(string variable)
@@ -34,14 +45,19 @@ namespace Impulse
         Debug.drawDebugLine(debugState.Warning, "Accessing undefined variable '{0}'!", variable);
         return null;
       }
-      return Variables.variables[variable];
+      return Variables.variables[(string)variable];
     }
 
     public static void printContent()
     {
       Console.WriteLine("\n\n--- Variable debug print ---");
       foreach(DictionaryEntry variable in Variables.variables) {
-        Console.WriteLine(" '{0}' => '{1}' [{2}]", variable.Key, variable.Value, variable.Value.GetType().ToString());
+        if(variable.Value == null) {
+          Console.WriteLine(" '{0}' => nil", variable.Key);
+        }
+        else {
+          Console.WriteLine(" '{0}' => '{1}' [{2}]", variable.Key, variable.Value, variable.Value.GetType().ToString());
+        }
       }
     }
   }
@@ -95,19 +111,29 @@ namespace Impulse
       Debug.drawDebugLine(debugState.Info, "Clearing localArguments (count: {0}).", LocalArguments.arguments.Count);
       LocalArguments.arguments.Clear();
     }
+
+    public static bool containsArguments()
+    {
+      return LocalArguments.arguments.Count > 0;
+    }
   }
 
   class VariableObject
   {
     private string name = "";
+    private bool create = false;
 
-    VariableObject(string name)
+    public VariableObject(string name, bool create)
     {
-      if(!Variables.isSet(name)) {
+      this.name = name;
+      this.create = create;
+
+      if(!Variables.isSet(name) && !create) {
         Debug.drawDebugLine(debugState.Warning, "Variable '{0}' does not exists.", name);
       }
-      this.name = name;
     }
+
+    public VariableObject(string name) : this(name, false) { }
 
     public object getValue()
     {
@@ -120,12 +146,13 @@ namespace Impulse
 
     public bool setValue(object value)
     {
-      if(!Variables.isSet(this.name)) {
-        Debug.drawDebugLine(debugState.Error, "Can not write to undefined variable '{0}'!", this.name);
-        return false;
+      if(Variables.isSet(this.name) || this.create) {
+        Variables.setValue(this.name, value);
+        return true;
       }
-      Variables.setValue(this.name, value);
-      return true;
+
+      Debug.drawDebugLine(debugState.Error, "Can not write to undefined variable '{0}'!", this.name);
+      return false;
     }
   }
 }

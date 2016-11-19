@@ -9,45 +9,49 @@ namespace Impulse
 {
   class Impulse
   {
-    public static object callStdMethod(string method, Argument[] args)
-    {
-      MethodInfo functionCaller = Impulse.stdNamespaceInfo(method);
-      if(functionCaller == null)
-        throw new Exception("Function does not exists.");
+    static MethodInfo __localFunction;
 
-      if(functionCaller.GetParameters().Length > 0) {
-        if(functionCaller.GetParameters().First().ParameterType == typeof(Argument[])) {
-          return functionCaller.Invoke(null, new object[] { args });
+    public static object callFunction()
+    {
+      if(Impulse.__localFunction == null) {
+        throw new Exception("Function not requested.");
+      }
+
+      if(Impulse.__localFunction.GetParameters().Length > 0) {
+        if(!LocalArguments.containsArguments()) {
+          throw new Exception("No parameters supplied to this method!");
         }
-        else {
-          try {
-            return functionCaller.Invoke(null, (object[])args.Cast<object>().ToArray());
-          }
-          catch (Exception e){
-            if(e.InnerException != null) throw e.InnerException;
-            else throw e;
-          }
+
+        try {
+          return Impulse.__localFunction.Invoke(null, LocalArguments.getFunctionParameters(Impulse.__localFunction.GetParameters().First().ParameterType));
+        }
+        catch(Exception e) {
+          if(e.InnerException != null) throw e.InnerException;
+          else throw e;
         }
       }
-      return Impulse.stdNamespaceInfo(method).Invoke(null, null);
+      return Impulse.__localFunction.Invoke(null, null);
     }
 
-    static MethodInfo stdNamespaceInfo(string fn)
+    public static void requestMethod(string fn)
     {
-      return typeof(Impulse).GetMethod(fn);
+      Impulse.__localFunction = typeof(Impulse).GetMethod(fn);
+      if(Impulse.__localFunction == null) {
+        throw new Exception("Function does not exist.");
+      }
     }
 
-    public static void println(Argument[] args)
+    public static void println(object[] args)
     {
       foreach(var a in args)
-        Console.Write("{0} ", a.value);
+        Console.Write("{0} ", a);
       Console.WriteLine();
     }
 
-    public static void test(Argument arg1)
+    public static int test(int arg1, int arg2)
     {
-      Console.WriteLine("Argument 1: {0}", arg1.value);
-      throw new Exception("Ala ma kota");
+      Console.WriteLine("Adding arg1 to arg2!");
+      return arg1 + arg2;
     }
   }
 }

@@ -78,34 +78,34 @@ namespace Impulse
               || nextChar == ')'
               || nextChar == '\n'
               || nextChar == '='
-              || nextChar == '+'
-              || nextChar == '<'
-              || nextChar == '>'
-              || nextChar == '*'
-              || nextChar == '/'
-              || nextChar == ':'
+              // || nextChar == '+'
+              // || nextChar == '<'
+              // || nextChar == '>'
+              // || nextChar == '*'
+              // || nextChar == '/'
+              // || nextChar == ':'
               || nextChar == ',') {
 
             this.tokens.Add(new Token(state, this.bufferToStringToken(buffer, lexPosition)));
 
-            if(nextChar == '='
-                || nextChar == '+'
-                || nextChar == '*'
-                || nextChar == '/'
-                || nextChar == '>'
-                || nextChar == '<') {
+            if(nextChar == '=') {
+                // || nextChar == '+'
+                // || nextChar == '*'
+                // || nextChar == '/'
+                // || nextChar == '>'
+                // || nextChar == '<') {
               state = TokenState.Token_Operator;
               buffer[0] = nextChar;
               lexPosition = 1;
               continue;
             }
-            else if(nextChar == ':' && state == TokenState.Token_Keyword) {
-              state = TokenState.Token_Reference;
+            //else if(nextChar == ':' && state == TokenState.Token_Keyword) {
+            //  state = TokenState.Token_Reference;
 
-              lexPosition = 1;
-              buffer[0] = nextChar;
-              continue;
-            }
+            //  lexPosition = 1;
+            //  buffer[0] = nextChar;
+            //  continue;
+            //}
             else if(nextChar == '(' || nextChar == ')') {
               if(nextChar == '(') state = TokenState.Token_Brackets;
               else state = TokenState.Token_Brackets_Close;
@@ -173,9 +173,9 @@ namespace Impulse
           }
         }
         else if(state == TokenState.Token_Operator) {
-          if(nextChar == '='
-              || nextChar == '+'
-              || nextChar == '-') {
+          if(nextChar == '=') {
+              // || nextChar == '+'
+              // || nextChar == '-') {
             buffer[lexPosition] = nextChar;
             lexPosition++;
           }
@@ -260,52 +260,52 @@ namespace Impulse
             continue;
           }
         }
-        else if(state == TokenState.Token_Reference) {
-          if(nextChar != ':' && lexPosition > 1) {
+        //else if(state == TokenState.Token_Reference) {
+        //  if(nextChar != ':' && lexPosition > 1) {
 
-            this.tokens.Add(new Token(state, this.bufferToStringToken(buffer, lexPosition)));
+        //    this.tokens.Add(new Token(state, this.bufferToStringToken(buffer, lexPosition)));
 
-            if(nextChar >= 'a' && nextChar <= 'z'
-                || nextChar >= 'A' && nextChar <= 'Z') {
-              state = TokenState.Token_Keyword;
-              lexPosition = 1;
-              buffer[0] = nextChar;
-              continue;
-            }
-            else if(nextChar >= '0' && nextChar <= '9'
-                || nextChar == '-') {
-              state = TokenState.Token_Decimal;
-              lexPosition = 1;
-              buffer[0] = nextChar;
-              continue;
-            }
-            else if(nextChar == '$') {
-              state = TokenState.Token_Variable;
-            }
-            else if(nextChar == '(') {
-              state = TokenState.Token_Brackets;
+        //    if(nextChar >= 'a' && nextChar <= 'z'
+        //        || nextChar >= 'A' && nextChar <= 'Z') {
+        //      state = TokenState.Token_Keyword;
+        //      lexPosition = 1;
+        //      buffer[0] = nextChar;
+        //      continue;
+        //    }
+        //    else if(nextChar >= '0' && nextChar <= '9'
+        //        || nextChar == '-') {
+        //      state = TokenState.Token_Decimal;
+        //      lexPosition = 1;
+        //      buffer[0] = nextChar;
+        //      continue;
+        //    }
+        //    else if(nextChar == '$') {
+        //      state = TokenState.Token_Variable;
+        //    }
+        //    else if(nextChar == '(') {
+        //      state = TokenState.Token_Brackets;
 
-              buffer[0] = nextChar;
-              lexPosition = 1;
+        //      buffer[0] = nextChar;
+        //      lexPosition = 1;
 
-              continue;
-            }
-            else state = TokenState.Token_Unknown;
+        //      continue;
+        //    }
+        //    else state = TokenState.Token_Unknown;
 
-            lexPosition = 0;
-            continue;
+        //    lexPosition = 0;
+        //    continue;
 
-          }
-          else if(nextChar != ':') {
-            Console.WriteLine("Error Unknown Char ':' on line {0}", currentLine);
-            //return null;
-          }
-          else {
-            buffer[lexPosition] = nextChar;
-            lexPosition++;
-          }
+        //  }
+        //  else if(nextChar != ':') {
+        //    Console.WriteLine("Error Unknown Char ':' on line {0}", currentLine);
+        //    //return null;
+        //  }
+        //  else {
+        //    buffer[lexPosition] = nextChar;
+        //    lexPosition++;
+        //  }
 
-        }
+        //}
         else if(state == TokenState.Token_Brackets) {
 
           this.tokens.Add(new Token(state, this.bufferToStringToken(buffer, lexPosition)));
@@ -394,12 +394,12 @@ namespace Impulse
           state = TokenState.Token_Decimal;
           continue;
         }
-        else if(nextChar == '='
-            || nextChar == '+'
-            || nextChar == '>'
-            || nextChar == '<'
-            || nextChar == '*'
-            || nextChar == '/') {
+        else if(nextChar == '=') {
+           // || nextChar == '+'
+           // || nextChar == '>'
+           // || nextChar == '<'
+           // || nextChar == '*'
+           // || nextChar == '/') {
           state = TokenState.Token_Operator;
           buffer[0] = nextChar;
           lexPosition++;
