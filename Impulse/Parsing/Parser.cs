@@ -38,14 +38,12 @@ namespace Impulse
     private Lexer lex;
     private parseType currentType;
     private List<Token> operation;
-    // private Variables variables;
 
     public Parser()
     {
       lex = new Lexer();
       currentType = parseType.Unknown;
       operation = new List<Token>();
-      // variables = new Variables();
     }
 
     public enum parseType
@@ -64,6 +62,7 @@ namespace Impulse
     private int validateTokens(Token[] tokens)
     {
       int brackets = 0;
+
       for(int i = 0; i < tokens.Length; i++) {
         if(tokens[i].token != null) {
           if(tokens[i].type == TokenState.Token_Brackets) brackets++;
@@ -87,7 +86,6 @@ namespace Impulse
       }
 
       this.parseTokens(tokens);
-
       Variables.printContent();
       // this.variables.printAllVariables();
     }
@@ -119,13 +117,13 @@ namespace Impulse
           }
         }
         else if(currentType == parseType.Unknown && tokens[i].type == TokenState.Token_Keyword) {
-          if(tokens[i].token.ToLower() == "define") {
-            this.currentType = parseType.Definition;
-          }
-          else if(tokens[i].token.ToLower() == "import") {
-            this.currentType = parseType.Import;
-          }
-          else if(tokens[i].token.ToLower() == "new") {
+          // if(tokens[i].token.ToLower() == "define") {
+          //   this.currentType = parseType.Definition;
+          // }
+          // else if(tokens[i].token.ToLower() == "import") {
+          //   this.currentType = parseType.Import;
+          // }
+          if(tokens[i].token.ToLower() == "new") {
             this.currentType = parseType.Variable_definition;
           }
           else if(Regex.Match(tokens[i].token, "^[_a-z]+[a-zA-Z]+?$").Success) {

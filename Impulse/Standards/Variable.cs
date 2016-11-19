@@ -45,4 +45,87 @@ namespace Impulse
       }
     }
   }
+
+  class LocalArguments
+  {
+    static List<object> arguments = new List<object>();
+
+    public static object getArgument(int index)
+    {
+      if(LocalArguments.arguments.Count >= index) {
+        Debug.drawDebugLine(debugState.Warning, "Accessing invalid argument at index {0}!", index);
+        return null;
+      }
+      return LocalArguments.arguments[index];
+    }
+
+    public static bool isArgumentType(int index, Type type)
+    {
+      if(index < LocalArguments.arguments.Count) {
+        return (LocalArguments.arguments[index].GetType() == type);
+      }
+      else {
+        Debug.drawDebugLine(debugState.Warning, "Accessing invalid argument index '{0}'!", index);
+        return false;
+      }
+    }
+
+    public static object[] getArguments(int index)
+    {
+      return LocalArguments.arguments.ToArray();
+    }
+
+    public static void addArgument(object arg)
+    {
+      LocalArguments.arguments.Add(arg);
+    }
+
+    public static object[] getFunctionParameters(Type param)
+    {
+      if(param == typeof(object[])) {
+        return new object[] { LocalArguments.arguments.ToArray() };
+      }
+      else {
+        return LocalArguments.arguments.ToArray();
+      }
+    }
+
+    public static void clearArguments()
+    {
+      Debug.drawDebugLine(debugState.Info, "Clearing localArguments (count: {0}).", LocalArguments.arguments.Count);
+      LocalArguments.arguments.Clear();
+    }
+  }
+
+  class VariableObject
+  {
+    private string name = "";
+
+    VariableObject(string name)
+    {
+      if(!Variables.isSet(name)) {
+        Debug.drawDebugLine(debugState.Warning, "Variable '{0}' does not exists.", name);
+      }
+      this.name = name;
+    }
+
+    public object getValue()
+    {
+      if(Variables.isSet(this.name)) {
+        Debug.drawDebugLine(debugState.Warning, "Variable '{0}' is not accesible.", this.name);
+        return null;
+      }
+      return Variables.getValue(this.name);
+    }
+
+    public bool setValue(object value)
+    {
+      if(!Variables.isSet(this.name)) {
+        Debug.drawDebugLine(debugState.Error, "Can not write to undefined variable '{0}'!", this.name);
+        return false;
+      }
+      Variables.setValue(this.name, value);
+      return true;
+    }
+  }
 }
