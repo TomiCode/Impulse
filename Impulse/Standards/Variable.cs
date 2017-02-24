@@ -13,7 +13,7 @@ namespace Impulse
 
     public static bool isSet(string variable)
     {
-      return Variables.variables.ContainsKey((string)variable);
+      return Variables.variables.ContainsKey(variable);
     }
 
     public static void setValue(string variable, object content)
@@ -34,7 +34,7 @@ namespace Impulse
           Debug.drawDebugLine(debugState.Info, "Set variable '{0}' => {1}", variable, content.GetType().ToString());
         }
       }
-      Variables.variables[(string)variable] = content;
+      Variables.variables[variable] = content;
     }
 
     public static object getValue(string variable)
